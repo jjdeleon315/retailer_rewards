@@ -4,8 +4,10 @@ import com.deleon.julian.charter.retailerrewards.repository.TransactionRepositor
 import com.deleon.julian.charter.retailerrewards.repository.entity.Purchase;
 import com.deleon.julian.charter.retailerrewards.response.Rewards;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.Period;
 import java.time.ZoneOffset;
+import java.util.Date;
 import java.util.List;
 import org.springframework.stereotype.Service;
 
@@ -26,9 +28,9 @@ public class RewardService {
 
     private long calculatePointsFromTransactions(List<Purchase> purchases) {
         long points = 0;
-        var threeMonthsAgo = Instant.now().atOffset(ZoneOffset.UTC).minus(Period.ofMonths(3));
+        var threeMonthsAgo = Date.from(Instant.now().minus(Period.ofDays(90)));
         for (var t: purchases) {
-            if (t.getCreatedAt().isAfter(threeMonthsAgo)) {
+            if (t.getCreatedAt().after(threeMonthsAgo)) {
                 points += calculatePointsFromTransaction(t);
             }
         }

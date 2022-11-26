@@ -1,15 +1,17 @@
 package com.deleon.julian.charter.retailerrewards.service;
 
-import com.deleon.julian.charter.retailerrewards.model.Transaction;
 import com.deleon.julian.charter.retailerrewards.repository.TransactionRepository;
+import com.deleon.julian.charter.retailerrewards.repository.entity.Purchase;
 import com.deleon.julian.charter.retailerrewards.response.Rewards;
+import java.time.Instant;
+import java.time.Period;
+import java.time.ZoneOffset;
 import java.util.List;
 import org.springframework.stereotype.Service;
 
 @Service
 public class RewardService {
 
-    private static final int MONTHS_FOR_TRANSACTION_REWARDS = 3;
     private TransactionRepository transactionRepository;
 
     public RewardService(TransactionRepository transactionRepository) {
@@ -17,20 +19,23 @@ public class RewardService {
     }
 
     public Rewards getRewards(String userId) {
-        List<Transaction> transactions = transactionRepository.getTransactionHistory(userId, MONTHS_FOR_TRANSACTION_REWARDS);
-        long points = calculatePointsFromTransactions(transactions);
+        List<Purchase> purchases = transactionRepository.findByUserId(userId);
+        long points = calculatePointsFromTransactions(purchases);
         return new Rewards(points);
     }
 
-    private long calculatePointsFromTransactions(List<Transaction> transactions) {
+    private long calculatePointsFromTransactions(List<Purchase> purchases) {
         long points = 0;
-        for (Transaction t: transactions) {
-            points += calculatePointsFromTransaction(t);
+        var threeMonthsAgo = Instant.now().atOffset(ZoneOffset.UTC).minus(Period.ofMonths(3));
+        for (var t: purchases) {
+            if (t.getCreatedAt().isAfter(threeMonthsAgo)) {
+                points += calculatePointsFromTransaction(t);
+            }
         }
         return points;
     }
 
-    private static long calculatePointsFromTransaction(Transaction t) {
+    private static long calculatePointsFromTransaction(Purchase t) {
         long dollars = t.getDollars();
         long points = 0;
         if (dollars > 50) {
